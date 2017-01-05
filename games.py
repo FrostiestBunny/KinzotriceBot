@@ -41,22 +41,32 @@ async def rps_challenge(ctx, member : discord.Member, bet : int):
         return
 
     await bot.say('Alright, the duel has started! Please wait till you receive a prompt from me.')
-    while True:
+    tries = 0
+    while tries < 3:
         await bot.send_message(challenger, 'Write rock, paper, or scissors.')
-        choice1 = await bot.wait_for_message(author=challenger)
+        choice1 = await bot.wait_for_message(author=challenger, timeout=60)
+        if choice1 is None:
+            await bot.say("Waited for too long. Aborting.")
+            return
         choice1 = choice1.content
         if 'rock' in choice1.lower() or 'paper' in choice1.lower() or 'scissors' in choice1.lower():
             await bot.send_message(challenger, 'Registered. Please wait.')
             break
         await bot.send_message(challenger, 'Incorrect response.')
-    while True:
+        tries += 1
+    tries = 0
+    while tries < 3:
         await bot.send_message(member, 'Write rock, paper, or scissors.')
-        choice2 = await bot.wait_for_message(author=member)
+        choice2 = await bot.wait_for_message(author=member, timeout=60)
+        if choice2 is None:
+            await bot.say("Waited for too long. Aborting.")
+            return
         choice2 = choice2.content
         if 'rock' in choice2.lower() or 'paper' in choice2.lower() or 'scissors' in choice2.lower():
             await bot.send_message(member, "Accepted.")
             break
         await bot.send_message(member, 'Incorrect response.')
+        tries += 1
     choice1_new, choice2_new = util.set_rps(choice1, choice2)
     winner = util.eval_rps(choice1_new, choice2_new)
     if winner == 'p1':
