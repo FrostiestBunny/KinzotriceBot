@@ -5,6 +5,7 @@ import discord
 import util
 from desires import desires
 import cards
+import battleships
 
 @bot.command(name="rps", pass_context=True)
 async def rps_challenge(ctx, member : discord.Member, bet : int):
@@ -227,3 +228,8 @@ async def cards_blackjack(channel : discord.Channel, *args : discord.Member):
         else:
             await bot.send_message(channel, "{0} loses {1} desires. {0}'s hand:\n {2}".format(player.name, bets[player.id], str(hands[player.name])))
             desires.sub(player.id, bets[player.id])
+
+@bot.command(name="battleships")
+async def test():
+    grid = battleships.Grid()
+    await bot.say("```"+str(grid)+"```")
