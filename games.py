@@ -230,6 +230,17 @@ async def cards_blackjack(channel : discord.Channel, *args : discord.Member):
             desires.sub(player.id, bets[player.id])
 
 @bot.command(name="battleships")
-async def test():
+async def test(pos_x=None, pos_y=None, size=1, dr=None):
     grid = battleships.Grid()
+
+    if pos_x or pos_y:
+        if not dr:
+            ship = battleships.Ship(size)
+        else:
+            ship = battleships.Ship(size, dr)
+        if not grid.insert(ship, int(pos_x), int(pos_y)):
+            await bot.say("Wrong coordinates.")
+            return
+        await bot.say("Ship inserted.")
+
     await bot.say("```"+str(grid)+"```")
