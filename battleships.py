@@ -20,38 +20,51 @@ class Grid:
             result += row + "\n\n"
         return result
 
-    def insert(self, ship, pos_x, pos_y):
+    def insert(self, ship, pos_x, pos_y, dr, ch="S"):
+
+        pos_y = self.y_coords.index(pos_y)+1
 
         if pos_x > len(self.grid)-1 or pos_x < 1 or pos_y > len(self.grid)-1 or pos_y < 1:
             return False
 
-        self.grid[pos_y][pos_x] = "S"
+        self.grid[pos_y][pos_x] = ch
         for s in range(ship.size):
-            if ship.direction == "north":
+            if dr == "north":
                 if pos_y-s < 1:
                     print("Wrong y buddy.")
                     return False
-                self.grid[pos_y-s][pos_x] = "S"
-            elif ship.direction == "south":
+                self.grid[pos_y-s][pos_x] = ch
+            elif dr == "south":
                 if pos_y+s > len(self.grid)-1:
                     print("Wrong y buddy.")
                     return False
-                self.grid[pos_y+s][pos_x] = "S"
-            elif ship.direction == "east":
+                self.grid[pos_y+s][pos_x] = ch
+            elif dr == "east":
                 if pos_x+s > len(self.grid[1])-1:
                     print("Wrong x buddy.")
                     return False
-                self.grid[pos_y][pos_x+s] = "S"
+                self.grid[pos_y][pos_x+s] = ch
             else:
                 if pos_x-s < 1:
                     print("Wrong x buddy.")
                     return False
-                self.grid[pos_y][pos_x-s] = "S"
+                self.grid[pos_y][pos_x-s] = ch
 
         return True
 
+    def hit(self, x, y):
+
+        if self.grid[y][x] == "S":
+            self.grid[y][x] = "X"
+            return True
+
+        return False
+
 class Ship:
 
-    def __init__(self, size=1, dr="north"):
-        self.direction = dr
+    def __init__(self, name, size=1):
+        self.name = name
         self.size = size
+
+    def __str__(self):
+        return self.name

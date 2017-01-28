@@ -5,7 +5,7 @@ import discord
 import util
 from desires import desires
 import cards
-import battleships
+import battleships as bs
 
 @bot.command(name="rps", pass_context=True)
 async def rps_challenge(ctx, member : discord.Member, bet : int):
@@ -229,18 +229,98 @@ async def cards_blackjack(channel : discord.Channel, *args : discord.Member):
             await bot.send_message(channel, "{0} loses {1} desires. {0}'s hand:\n {2}".format(player.name, bets[player.id], str(hands[player.name])))
             desires.sub(player.id, bets[player.id])
 
-@bot.command(name="battleships")
-async def test(pos_x=None, pos_y=None, size=1, dr=None):
-    grid = battleships.Grid()
+def eval_direction(dr):
+    if dr.lower() == "n":
+        return "north"
+    elif dr.lower() == "s":
+        return "south"
+    elif dr.lower() == "e":
+        return "east"
+    elif dr.lower() == "w":
+        return "west"
+    else:
+        return False
 
-    if pos_x or pos_y:
-        if not dr:
-            ship = battleships.Ship(size)
-        else:
-            ship = battleships.Ship(size, dr)
-        if not grid.insert(ship, int(pos_x), int(pos_y)):
-            await bot.say("Wrong coordinates.")
-            return
-        await bot.say("Ship inserted.")
+@bot.command(pass_context=True)
+async def battleships(ctx, p2 : discord.Member, bet : int):
 
-    await bot.say("```"+str(grid)+"```")
+    p1 = ctx.message.author
+
+    def check(message):
+        return message.author == p1 or message.author == p2
+
+    if desires.get(p1.id) < bet:
+        await bot.say("Not enough desires, you scrub.")
+        return
+    if desires.get(p2.id) < bet:
+        await bot.say("Given user is too poor, what a loser.")
+        return
+
+    p1_main_grid = bs.Grid()
+    p1_helper_grid = bs.Grid()
+    p2_main_grid = bs.Grid()
+    p2_helper_grid = bs.Grid()
+
+    ships = [bs.Ship("Carrier", 5), bs.Ship("Battleship", 4), bs.Ship("Battleship", 4), bs.Ship("Cruiser", 3), bs.Ship("Cruiser", 3), bs.Ship("Cruiser", 3),
+            bs.Ship("Submarine", 3), bs.Ship("Submarine", 3), bs.Ship("Submarine", 3), bs.Ship("Submarine", 3),
+            bs.Ship("Destroyer", 2), bs.Ship("Destroyer", 2), bs.Ship("Destroyer", 2), bs.Ship("Destroyer", 2), bs.Ship("Destroyer", 2)]
+
+    await bot.say("Set up your ships now, scrubs. And do it in goddamn PMs.")
+    await bot.send_message(p1, "Grid for marking your shots.")
+    p1_helper_msg = await bot.send_message(p1, "```"+str(p1_helper_grid)+"```")
+    await bot.send_message(p1, "Your main grid.")
+    p1_main_msg = await bot.send_message(p1, "```"+str(p1_main_grid)+"```")
+    await bot.send_message(p2, "Grid for marking your shots.")
+    p2_helper_msg = await bot.send_message(p2, "```"+str(p2_helper_grid)+"```")
+    await bot.send_message(p2, "Your main grid.")
+    p2_main_msg = await bot.send_message(p2, "```"+str(p2_main_grid)+"```")
+
+    p1_done = False
+    p2_done = False
+    p1_curr_s = 0
+    p2_curr_s = 0
+    p1_insert_str = "Insert {}, size: {}".format(str(ships[p1_curr_s]), ships[p1_curr_s].size)
+    p2_insert_str = "Insert {}, size: {}".format(str(ships[p2_curr_s]), ships[p2_curr_s].size)
+    p1_insert_msg = await bot.send_message(p1, p1_insert_str)
+    p2_insert_msg = await bot.send_message(p2, p2_insert_str)
+    while not p1_done and not p2_done:
+
+        if p1_curr_s == len(ships):
+            p1_done = True
+
+        if p2_curr_s == len(ships):
+            p2_done = True
+
+        msg = await bot.wait_for_message(check=check)
+        y = msg.content[0]
+        x = int(msg.content[1])
+        dr = msg.content[3]
+        dr = eval_direction(dr)
+
+        if msg.author == p1 and not p1_done:
+            while not dr:
+                await bot.send_message(p1, "Wrong direction. Please use N, S, E, or W.")
+                dr = bot.wait_for_message(author=p1)
+                dr = eval_direction(dr)
+
+            if p1_main_grid.insert(ships[p1_curr_s], x, y, dr):
+                await bot.edit_message(p1_main_msg, "```"+str(p1_main_grid)+"```")
+                p1_curr_s += 1
+                await bot.edit_message(p1_insert_msg, "Inserted successfully. "+"Insert {}, size: {}".format(str(ships[p1_curr_s]), ships[p1_curr_s].size))
+            else:
+                await bot.send_message(p1, "You put the ship at incorrect coordinates, mate.")
+                continue
+
+        elif msg.author == p2 and not p2_done:
+            while not dr:
+                await bot.send_message(p2, "Wrong direction. Please use N, S, E, or W.")
+                dr = bot.wait_for_message(author=p2)
+                dr = eval_direction(dr)
+
+            if p2_main_grid.insert(ships[p2_curr_s], x, y, dr):
+                await bot.edit_message(p2_main_msg, "```"+str(p2_main_grid)+"```")
+                p2_curr_s += 1
+                await bot.edit_message(p2_insert_msg, "Inserted successfully. "+p2_insert_str)
+            else:
+                await bot.send_message(p2, "You put the ship at incorrect coordinates, mate.")
+                continue
