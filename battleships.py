@@ -22,31 +22,26 @@ class Grid:
 
     def insert(self, ship, pos_x, pos_y, dr, ch="S"):
 
-        pos_y = self.y_coords.index(pos_y)+1
+        pos_y = self.y_coords.index(pos_y.upper())+1
 
         if pos_x > len(self.grid)-1 or pos_x < 1 or pos_y > len(self.grid)-1 or pos_y < 1:
             return False
 
-        self.grid[pos_y][pos_x] = ch
         for s in range(ship.size):
             if dr == "north":
-                if pos_y-s < 1:
-                    print("Wrong y buddy.")
+                if pos_y-s < 1 or self.grid[pos_y-s][pos_x] == "S":
                     return False
                 self.grid[pos_y-s][pos_x] = ch
             elif dr == "south":
-                if pos_y+s > len(self.grid)-1:
-                    print("Wrong y buddy.")
+                if pos_y+s > len(self.grid)-1 or self.grid[pos_y+s][pos_x] == "S":
                     return False
                 self.grid[pos_y+s][pos_x] = ch
             elif dr == "east":
-                if pos_x+s > len(self.grid[1])-1:
-                    print("Wrong x buddy.")
+                if pos_x+s > len(self.grid[1])-1 or self.grid[pos_y][pos_x+s] == "S":
                     return False
                 self.grid[pos_y][pos_x+s] = ch
             else:
-                if pos_x-s < 1:
-                    print("Wrong x buddy.")
+                if pos_x-s < 1 or self.grid[pos_y][pos_x-s] == "S":
                     return False
                 self.grid[pos_y][pos_x-s] = ch
 

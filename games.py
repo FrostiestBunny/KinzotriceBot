@@ -6,6 +6,7 @@ import util
 from desires import desires
 import cards
 import battleships as bs
+import re
 
 @bot.command(name="rps", pass_context=True)
 async def rps_challenge(ctx, member : discord.Member, bet : int):
@@ -249,6 +250,16 @@ async def battleships(ctx, p2 : discord.Member, bet : int):
     def check(message):
         return message.author == p1 or message.author == p2
 
+    def parse_msg(msg):
+        pattern = re.compile(r"\s*([A-J])\s*([123456789]|10)\s*([NSEWnsew])\s*", re.I)
+        match = re.fullmatch(pattern, msg)
+        if match:
+            y = match.group(1)
+            x = int(match.group(2))
+            dr = match.group(3)
+            return (y, x, dr)
+        return False
+
     if desires.get(p1.id) < bet:
         await bot.say("Not enough desires, you scrub.")
         return
@@ -283,6 +294,7 @@ async def battleships(ctx, p2 : discord.Member, bet : int):
     p2_insert_str = "Insert {}, size: {}".format(str(ships[p2_curr_s]), ships[p2_curr_s].size)
     p1_insert_msg = await bot.send_message(p1, p1_insert_str)
     p2_insert_msg = await bot.send_message(p2, p2_insert_str)
+
     while not p1_done and not p2_done:
 
         if p1_curr_s == len(ships):
@@ -292,17 +304,15 @@ async def battleships(ctx, p2 : discord.Member, bet : int):
             p2_done = True
 
         msg = await bot.wait_for_message(check=check)
-        y = msg.content[0]
-        x = int(msg.content[1])
-        dr = msg.content[3]
+        parsed = parse_msg(msg.content)
+        if parsed:
+            y, x, dr = parsed
+        else:
+            await bot.send_message(msg.author, "You fucked up specifying the coordinates.")
+            continue
         dr = eval_direction(dr)
 
         if msg.author == p1 and not p1_done:
-            while not dr:
-                await bot.send_message(p1, "Wrong direction. Please use N, S, E, or W.")
-                dr = bot.wait_for_message(author=p1)
-                dr = eval_direction(dr)
-
             if p1_main_grid.insert(ships[p1_curr_s], x, y, dr):
                 await bot.edit_message(p1_main_msg, "```"+str(p1_main_grid)+"```")
                 p1_curr_s += 1
@@ -312,11 +322,6 @@ async def battleships(ctx, p2 : discord.Member, bet : int):
                 continue
 
         elif msg.author == p2 and not p2_done:
-            while not dr:
-                await bot.send_message(p2, "Wrong direction. Please use N, S, E, or W.")
-                dr = bot.wait_for_message(author=p2)
-                dr = eval_direction(dr)
-
             if p2_main_grid.insert(ships[p2_curr_s], x, y, dr):
                 await bot.edit_message(p2_main_msg, "```"+str(p2_main_grid)+"```")
                 p2_curr_s += 1
