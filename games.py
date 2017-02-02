@@ -267,6 +267,19 @@ async def battleships(ctx, p2 : discord.Member, bet : int):
         await bot.say("Given user is too poor, what a loser.")
         return
 
+    await bot.say('{}, you have been challenged to a GAME OF BATTLESHIPS by {}. The bet is {} desires. Do you accept? Type yes or no.'.format(p2.mention, p1.name, bet))
+    response = await bot.wait_for_message(timeout=120, author=p2)
+    if response is None:
+        await bot.say('Waited for too long, aborting.')
+        return
+    response = response.content
+    if 'no' in response.lower():
+        await bot.say('You coward.')
+        return
+    if 'yes' not in response.lower():
+        await bot.say("I don't get it.")
+        return
+
     p1_main_grid = bs.Grid()
     p1_helper_grid = bs.Grid()
     p2_main_grid = bs.Grid()
@@ -290,18 +303,10 @@ async def battleships(ctx, p2 : discord.Member, bet : int):
     p2_done = False
     p1_curr_s = 0
     p2_curr_s = 0
-    p1_insert_str = "Insert {}, size: {}".format(str(ships[p1_curr_s]), ships[p1_curr_s].size)
-    p2_insert_str = "Insert {}, size: {}".format(str(ships[p2_curr_s]), ships[p2_curr_s].size)
-    p1_insert_msg = await bot.send_message(p1, p1_insert_str)
-    p2_insert_msg = await bot.send_message(p2, p2_insert_str)
+    p1_insert_msg = await bot.send_message(p1, "Insert {}, size: {}".format(str(ships[p1_curr_s]), ships[p1_curr_s].size))
+    p2_insert_msg = await bot.send_message(p2, "Insert {}, size: {}".format(str(ships[p2_curr_s]), ships[p2_curr_s].size))
 
-    while not p1_done and not p2_done:
-
-        if p1_curr_s == len(ships):
-            p1_done = True
-
-        if p2_curr_s == len(ships):
-            p2_done = True
+    while not p1_done or not p2_done:
 
         msg = await bot.wait_for_message(check=check)
         parsed = parse_msg(msg.content)
@@ -316,7 +321,11 @@ async def battleships(ctx, p2 : discord.Member, bet : int):
             if p1_main_grid.insert(ships[p1_curr_s], x, y, dr):
                 await bot.edit_message(p1_main_msg, "```"+str(p1_main_grid)+"```")
                 p1_curr_s += 1
-                await bot.edit_message(p1_insert_msg, "Inserted successfully. "+"Insert {}, size: {}".format(str(ships[p1_curr_s]), ships[p1_curr_s].size))
+                if p1_curr_s < len(ships):
+                    await bot.edit_message(p1_insert_msg, "Inserted successfully. " + "Insert {}, size: {}".format(str(ships[p1_curr_s]), ships[p1_curr_s].size))
+                else:
+                    await bot.edit_message(p1_insert_msg, "You have inserted all ships.")
+                    p1_done = True
             else:
                 await bot.send_message(p1, "You put the ship at incorrect coordinates, mate.")
                 continue
@@ -325,7 +334,13 @@ async def battleships(ctx, p2 : discord.Member, bet : int):
             if p2_main_grid.insert(ships[p2_curr_s], x, y, dr):
                 await bot.edit_message(p2_main_msg, "```"+str(p2_main_grid)+"```")
                 p2_curr_s += 1
-                await bot.edit_message(p2_insert_msg, "Inserted successfully. "+p2_insert_str)
+                if p2_curr_s < len(ships):
+                    await bot.edit_message(p2_insert_msg, "Inserted successfully. " + "Insert {}, size: {}".format(str(ships[p2_curr_s]), ships[p2_curr_s].size))
+                else:
+                    await bot.edit_message(p2_insert_msg, "You have inserted all ships.")
+                    p2_done = True
             else:
                 await bot.send_message(p2, "You put the ship at incorrect coordinates, mate.")
                 continue
+
+    await bot.say("Finished")
