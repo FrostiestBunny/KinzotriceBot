@@ -9,14 +9,19 @@ import util
 import json
 from desires import desires
 import os
+import re
+import pickle
 
 description = '''Removed kebab.'''
 bot = commands.Bot(command_prefix='?', description=description)
 imgSuf = ("png", "jpg", "jpeg", "gif", "gifv")
 vidSuf = ("https://www.youtube", "http://www.youtube")
+default_markov_input = {}
+bee_movie = ""
 
 @bot.event
 async def on_ready():
+    global bee_movie
     uo = None
     await bot.change_presence(game=discord.Game(name='achieving world domination'))
     servers = list(bot.servers)
@@ -28,6 +33,23 @@ async def on_ready():
         if emoji.name == "oh_desire":
             desires.set_emoji(emoji)
             break
+
+    with open("logs.pickle", mode="rb") as f:
+        pickle_data = pickle.load(f)
+
+    pattern = re.compile(r"(\[\d{4}-\d{2}-\d{2}\])?\s*(.*?)\(.*?\):\s*(.*)", re.I)
+    for line in pickle_data:
+        match = re.match(pattern, line)
+        if match:
+            if match.group(2) not in default_markov_input:
+                default_markov_input[match.group(2)] = [match.group(3)]
+            else:
+                default_markov_input[match.group(2)].append(match.group(3))
+
+    with open("bee.txt", mode="r", encoding="utf-8") as f:
+        bee_movie = f.read().replace('\n', '')
+    for k in default_markov_input:
+        default_markov_input[k] = " ".join(default_markov_input[k])
     print('Logged in as')
     print(bot.user.name)
     print('------')
@@ -195,3 +217,96 @@ async def dismiss(ctx):
     else:
         await bot.say("You wish.")
         return
+
+@bot.command()
+async def purge_fata(channel : discord.Channel):
+    await bot.purge_from(channel, limit=50, check=util.fata_check)
+
+@bot.command()
+async def markov(member : str, order : int=4, gen_len : int=100):
+    if order > 6:
+        await bot.say("6 is max because what if you see some secret ERP?")
+        return
+    if gen_len > 500:
+        await bot.say("The length is too big.")
+        return
+    data = default_markov_input
+    if not member in data:
+        await bot.say("No such member in the input data.")
+        return
+    ngrams = {}
+    to_markov = data[member]
+
+    for i in range(len(to_markov)-order):
+        gram = to_markov[i:i+order]
+
+        if not gram in ngrams:
+            ngrams[gram] = []
+        ngrams[gram].append(to_markov[i+order])
+
+
+    current_gram = random.choice(list(ngrams.keys()))
+    result = current_gram
+
+    for i in range(gen_len):
+        try:
+            possibilities = ngrams[current_gram]
+        except KeyError:
+            await bot.say("There was some error. Sucks, don't it.")
+            break
+        if possibilities is None:
+            break
+        next = random.choice(possibilities)
+        result += next
+        length = len(result)
+        current_gram = result[length-order:length]
+    result = result.replace("\n", " ")
+    await bot.say(result)
+
+@bot.command()
+async def markov_list():
+    results = []
+    counter = 0
+    index = -1
+    print(len(default_markov_input))
+    for k in default_markov_input:
+        if "[" in k or "]" in k:
+            continue
+        if counter % 100 == 0:
+            results.append("")
+            index += 1
+        results[index] += k + " "
+        counter += 1
+
+    for r in results:
+        await bot.say(r)
+
+@bot.command()
+async def beerkov(order : int=6, gen_len : int=100):
+    if order > 6:
+        await bot.say("No.")
+        return
+    ngrams = {}
+    for i in range(len(bee_movie)-order):
+        gram = bee_movie[i:i+order]
+
+        if not gram in ngrams:
+            ngrams[gram] = []
+        ngrams[gram].append(bee_movie[i+order])
+
+    current_gram = random.choice(list(ngrams.keys()))
+    result = current_gram
+
+    for i in range(gen_len):
+        try:
+            possibilities = ngrams[current_gram]
+        except KeyError:
+            await bot.say("There was some error. Sucks, don't it.")
+            break
+        if possibilities is None:
+            break
+        next = random.choice(possibilities)
+        result += next
+        length = len(result)
+        current_gram = result[length-order:length]
+    await bot.say(result)

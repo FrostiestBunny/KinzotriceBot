@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import UOBot
+import re
 
 def math_check(message : UOBot.discord.Message):
     for n in range(10):
@@ -8,6 +9,13 @@ def math_check(message : UOBot.discord.Message):
             if "+" in message.content or "-" in message.content or "*" in message.content or "=" in message.content:
                 return True
     return False
+
+def fata_check(message : UOBot.discord.Message):
+    pattern = re.compile(r"\s*Fata\s*Morgana\s*|\s*Fat\s*Morgan\s*|\s*Fata\s*|\s*Morgana\s*", re.I)
+    match = re.match(pattern, message.content)
+
+    return match
+
 
 def set_rps(*args):
     result = []
