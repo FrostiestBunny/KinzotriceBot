@@ -218,3 +218,4 @@ pip-log.txt
 #Stuff you don't need to see.
 *.txt
 *.json
+*.pickle
